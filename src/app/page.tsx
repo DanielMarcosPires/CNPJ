@@ -1,58 +1,88 @@
+"use client";
 import Input from "@/Components/Input";
 import { Layout } from "@/Layout/Layout";
+import { useState } from "react";
 
 
-function calcularDV(cnpj:string) {
-  // Função para obter o valor ASCII e subtrair 48
-  function getAsciiValue(char:string) {
-    const asciiValue = char.charCodeAt(0);
-    return asciiValue - 48; // Subtrai 48 para números e letras
-  }
-
-  // Atribui os valores dos caracteres
-  const valores = Array.from(cnpj.replace(/[^A-Za-z0-9]/g, '')) // Remove qualquer caractere não alfanumérico
-    .map((char) => {
-      if (/[A-Za-z]/.test(char)) {
-        return getAsciiValue(char);
-      } else {
-        return parseInt(char); // Para números, mantemos o valor original
-      }
-    });
-
-  // Função para calcular o dígito verificador
-  function calcularDigitoVerificador(valores:number, pesos:number) {
-    const soma = valores.reduce((acc, valor, i) => acc + valor * pesos[i], 0);
-    const resto = soma % 11;
-    return resto < 2 ? 0 : 11 - resto;
-  }
-
-  // Pesos para os cálculos
-  const pesos1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  const pesos2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-
-  // Calcula os dois dígitos verificadores
-  const primeiroDV = calcularDigitoVerificador(valores, pesos1);
-  valores.push(primeiroDV); // Adiciona o 1º DV para calcular o 2º
-  const segundoDV = calcularDigitoVerificador(valores, pesos2);
-
-  return `${cnpj}-${primeiroDV}${segundoDV}`;
+function CNPJ_converter(value: string) {
+  const caracter = value.split(""); // Converte string em Array!
+  const resultado: number[] = [];
+  caracter.forEach((char) => {
+    const code = char.charCodeAt(0);
+    let valueConvertido;
+    if (code >= 65 && code <= 90) {
+      valueConvertido = code - 48;
+    } else if (code >= 48 && code <= 50) {
+      valueConvertido = code - 48;
+    } else {
+      valueConvertido = 0;
+    }
+    resultado.push(valueConvertido);
+  });
+  return resultado;
 }
 
-// Exemplo de uso
-const cnpjAlfanumerico = '12.ABC.345/01DE';
-const cnpjComDV = calcularDV(cnpjAlfanumerico);
+function mult(arr: string, weight: number[]) {
+  const res = CNPJ_converter(arr);
+  res.map((value, index) => {
+    return value * weight[index];
+  });
+  return res;
+}
 
-console.log(`CNPJ alfanumérico com dígitos verificadores: ${cnpjComDV}`);
+function soma(arr: number[]) {
+  const somaTotal = arr.reduce((acc, value) => acc + value, 0);
+  return somaTotal;
+}
 
+function rest(soma: number) {
+  const resName = soma % 11;
+  return resName < 2 ? 0 : 11 - resName;
+}
+
+function calc1(str1: string, peso1: number[]) {
+  const multi = mult(str1, peso1);
+  const som = soma(multi);
+  const resto = rest(som);
+  return resto; 
+}
+function calc2(str2: string, peso2: number[]) {
+  const multi = mult(str2, peso2);
+  const som = soma(multi);
+  const resto = rest(som);
+  return resto; 
+}
 
 export default function Home() {
+  const [value, setValue] = useState("");
+
+  const [calculo1, setCalculo1] = useState();
+  const [calculo2, setCalculo2] = useState();
+
+  const str1 = value.slice(0, 12).toUpperCase();
+  const str2 = value.slice(0, 13).toUpperCase();
+  
+  const peso1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const peso2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  
+  calc1(str1, peso1);
+  calc2(str2, peso2);
+
   return (
     <Layout.Structure>
-      <Layout.Header/>
+      <Layout.Header />
       <Layout.Content>
-          <Layout.Form className="w-[400px]">
-            <Input type="text" text="CNPJ:" placeholder="Insira o CNPJ"/>
-          </Layout.Form>
+        <Layout.Form className="w-[400px]">
+          <Input
+            onChange={(e) => setValue(e.target.value)}
+            minLength={13}
+            maxLength={14}
+            type="text"
+            text="Digite um CNPJ:"
+            placeholder="Digite um CNPJ"
+          />
+        </Layout.Form>
+        <>{value}</>
       </Layout.Content>
     </Layout.Structure>
   );
